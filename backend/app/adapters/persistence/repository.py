@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy import delete, func, select
@@ -22,7 +22,7 @@ from app.domain.normalize import normalized_score
 
 
 def _now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class ChartRepository:
@@ -262,6 +262,21 @@ class ChartRepository:
         swap = index - 1 if direction == "up" else index + 1
         if 0 <= swap < len(keys):
             keys[index], keys[swap] = keys[swap], keys[index]
+        await self.replace_catalog_order(platform_id, keys)
+        return True
+
+    async def reorder_catalog_chart(
+        self,
+        platform_id: str,
+        chart_key: str,
+        before_key: str | None,
+        current_keys: list[str],
+    ) -> bool:
+        from app.services.catalog import insert_chart_before
+
+        keys = insert_chart_before(current_keys, chart_key, before_key)
+        if keys is None:
+            return False
         await self.replace_catalog_order(platform_id, keys)
         return True
 

@@ -7,6 +7,7 @@ import {
   listPlatforms,
   moveBoard,
   moveCatalogChart,
+  reorderCatalogChart,
 } from "../api";
 import type { BoardInfo, CatalogPlatform, LatestBoard, PlatformInfo } from "../types";
 
@@ -64,6 +65,16 @@ export const useChartsStore = defineStore("charts", {
     },
     async moveCatalogChart(platform: string, chartKey: string, direction: "up" | "down") {
       const res = await moveCatalogChart(platform, chartKey, direction);
+      if (res.code === 0 && res.data?.groups) {
+        this.catalog = this.catalog.map((item) =>
+          item.id === platform ? { ...item, groups: res.data.groups } : item,
+        );
+        return;
+      }
+      this.error = res.msg || "调整顺序失败";
+    },
+    async reorderCatalogChart(platform: string, chartKey: string, beforeKey: string | null) {
+      const res = await reorderCatalogChart(platform, chartKey, beforeKey);
       if (res.code === 0 && res.data?.groups) {
         this.catalog = this.catalog.map((item) =>
           item.id === platform ? { ...item, groups: res.data.groups } : item,

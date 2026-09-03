@@ -27,6 +27,10 @@ class MoveBoardIn(BaseModel):
     direction: Literal["up", "down"]
 
 
+class ReorderCatalogIn(BaseModel):
+    before_key: str | None = None
+
+
 def _board_item(spec: BoardSpec, sort_order: int) -> dict[str, Any]:
     return {
         "id": spec.id,
@@ -58,20 +62,28 @@ def build_router() -> APIRouter:
     @router.get("/boards")
     async def boards(request: Request) -> Any:
         specs: list[BoardSpec] = request.app.state.board_specs
-        return ok(
-            [
-                {
-                    "id": spec.id,
-                    "platform": spec.platform,
-                    "name": spec.name,
-                    "type": spec.type,
-                    "enabled": spec.enabled,
-                    "interval_sec": spec.interval_sec,
-                    "overview_slot": spec.overview_slot,
-                }
-                for spec in specs
-            ]
-        )
+        async with request.app.state.session_factory() as session:
+            order = await ChartRepository(session).board_sort_map()
+        return ok(_sorted_boards(specs, order))
+
+    @router.post("/boards/{board_id}/move")
+    async def move_board(board_id: str, payload: MoveBoardIn, request: Request) -> Any:
+        spec = _find_spec(request, board_id)
+        if spec is None:
+            return fail(40401, "board not found", status_code=404)
+        specs: list[BoardSpec] = request.app.state.board_specs
+        async with request.app.state.session_factory() as session:
+            repo = ChartRepository(session)
+            moved = await repo.move_board(
+                board_id,
+                payload.direction,
+                {item.id for item in specs},
+            )
+            if not moved:
+                return fail(40401, "board not found", status_code=404)
+            await session.commit()
+            order = await repo.board_sort_map()
+        return ok(_sorted_boards(specs, order))
 
     @router.get("/boards/{board_id}")
     async def board_detail(board_id: str, request: Request) -> Any:
@@ -131,6 +143,38 @@ def build_router() -> APIRouter:
             repo = ChartRepository(session)
             keys = catalog_chart_keys(groups, await repo.catalog_order_map(platform))
             moved = await repo.move_catalog_chart(platform, chart_key, payload.direction, keys)
+            if not moved:
+                return fail(40401, "chart not found", status_code=404)
+            await session.commit()
+            order = await repo.catalog_order_map(platform)
+        return ok(
+            {
+                "id": platform,
+                "name": names[platform],
+                "groups": apply_catalog_order(groups, order),
+            }
+        )
+
+    @router.post("/catalog/{platform}/charts/{chart_key}/reorder")
+    async def reorder_catalog_chart(
+        platform: str,
+        chart_key: str,
+        payload: ReorderCatalogIn,
+        request: Request,
+    ) -> Any:
+        names = request.app.state.registry.platform_names()
+        if platform not in names:
+            return fail(40401, "platform not found", status_code=404)
+        raw = await _raw_catalog_platforms(request)
+        groups = next((item["groups"] for item in raw if item["id"] == platform), [])
+        if not groups:
+            return fail(40401, "catalog unavailable", status_code=404)
+        async with request.app.state.session_factory() as session:
+            repo = ChartRepository(session)
+            keys = catalog_chart_keys(groups, await repo.catalog_order_map(platform))
+            moved = await repo.reorder_catalog_chart(
+                platform, chart_key, payload.before_key, keys
+            )
             if not moved:
                 return fail(40401, "chart not found", status_code=404)
             await session.commit()

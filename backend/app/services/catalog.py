@@ -116,6 +116,25 @@ def catalog_chart_keys(groups: list[dict[str, Any]], order_map: dict[str, int]) 
     return [str(item["key"]) for item in sorted_catalog_charts(groups, order_map)]
 
 
+def insert_chart_before(
+    keys: list[str],
+    chart_key: str,
+    before_key: str | None,
+) -> list[str] | None:
+    if chart_key not in keys:
+        return None
+    if before_key is not None and before_key not in keys:
+        return None
+    if before_key == chart_key:
+        return list(keys)
+    next_keys = [key for key in keys if key != chart_key]
+    if before_key is None:
+        next_keys.append(chart_key)
+    else:
+        next_keys.insert(next_keys.index(before_key), chart_key)
+    return next_keys
+
+
 def match_spec(specs: list[BoardSpec], platform: str, key: str) -> BoardSpec | None:
     for spec in specs:
         if spec.platform == platform and chart_key_for_spec(spec) == key:

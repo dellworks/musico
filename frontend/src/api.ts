@@ -24,10 +24,6 @@ export function listPlatforms(): Promise<Envelope<PlatformInfo[]>> {
   return getJson("/api/v1/platforms");
 }
 
-export function listPlatforms(): Promise<Envelope<PlatformInfo[]>> {
-  return getJson("/api/v1/platforms");
-}
-
 export function listBoards(): Promise<Envelope<BoardInfo[]>> {
   return getJson("/api/v1/boards");
 }
@@ -62,6 +58,21 @@ export function moveCatalogChart(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ direction }),
+    },
+  );
+}
+
+export function reorderCatalogChart(
+  platform: string,
+  chartKey: string,
+  beforeKey: string | null,
+): Promise<Envelope<CatalogPlatform>> {
+  return sendJson(
+    `/api/v1/catalog/${encodeURIComponent(platform)}/charts/${encodeURIComponent(chartKey)}/reorder`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ before_key: beforeKey }),
     },
   );
 }

@@ -188,6 +188,7 @@ onMounted(() => {
         :link-to-chart="!left.id.startsWith('catalog:')"
         :picker-groups="groupsOf(left.platform)"
         @pick="setKey(left.platform, $event)"
+        @reorder="(key, beforeKey) => store.reorderCatalogChart(left.platform, key, beforeKey)"
       />
       <BoardColumn
         :class="tab === 1 ? '' : 'hidden md:block'"
@@ -198,6 +199,7 @@ onMounted(() => {
         :link-to-chart="!right.id.startsWith('catalog:')"
         :picker-groups="groupsOf(right.platform)"
         @pick="setKey(right.platform, $event)"
+        @reorder="(key, beforeKey) => store.reorderCatalogChart(right.platform, key, beforeKey)"
       />
     </div>
 

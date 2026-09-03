@@ -24,7 +24,7 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   pick: [key: string];
-  move: [key: string, direction: "up" | "down"];
+  reorder: [key: string, beforeKey: string | null];
 }>();
 
 const allItems = computed(() => props.latest?.items ?? []);
@@ -52,7 +52,7 @@ const staleLabel = computed(() => {
           :chart-key="board.chart_key"
           :groups="pickerGroups"
           @select="emit('pick', $event)"
-          @move="(key, direction) => emit('move', key, direction)"
+          @reorder="(key, beforeKey) => emit('reorder', key, beforeKey)"
         />
         <RouterLink
           v-else

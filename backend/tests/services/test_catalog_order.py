@@ -49,3 +49,28 @@ async def test_move_unknown_chart_returns_false(
     async with session_factory() as session:
         repo = ChartRepository(session)
         assert await repo.move_catalog_chart("qqmusic", "999", "down", ["4", "26"]) is False
+
+
+@pytest.mark.asyncio
+async def test_reorder_catalog_chart_inserts_before(
+    session_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    keys = ["4", "26", "27", "5"]
+    async with session_factory() as session:
+        repo = ChartRepository(session)
+        assert await repo.reorder_catalog_chart("qqmusic", "5", "26", keys)
+        await session.commit()
+        order = await repo.catalog_order_map("qqmusic")
+    assert sorted(order, key=order.get) == ["4", "5", "26", "27"]
+
+    async with session_factory() as session:
+        repo = ChartRepository(session)
+        current = sorted(
+            (await repo.catalog_order_map("qqmusic")).items(),
+            key=lambda item: item[1],
+        )
+        current_keys = [key for key, _ in current]
+        assert await repo.reorder_catalog_chart("qqmusic", "4", None, current_keys)
+        await session.commit()
+        order = await repo.catalog_order_map("qqmusic")
+    assert sorted(order, key=order.get) == ["5", "26", "27", "4"]

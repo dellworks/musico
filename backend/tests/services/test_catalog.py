@@ -78,3 +78,12 @@ def test_new_charts_append_after_saved_order() -> None:
     assert keys[:2] == ["26", "4"]
     assert set(keys[2:]) == {"27", "5"}
 
+
+def test_insert_chart_before_moves_to_slot() -> None:
+    keys = ["4", "26", "27", "5"]
+    assert insert_chart_before(keys, "5", "26") == ["4", "5", "26", "27"]
+    assert insert_chart_before(keys, "4", None) == ["26", "27", "5", "4"]
+    assert insert_chart_before(keys, "26", "26") == keys
+    assert insert_chart_before(keys, "999", "26") is None
+    assert insert_chart_before(keys, "26", "nope") is None
+

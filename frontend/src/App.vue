@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { computed, onMounted } from "vue";
+import { computed, onMounted, onUnmounted } from "vue";
 import { RouterLink, RouterView, useRoute } from "vue-router";
 import PlayerBar from "./components/PlayerBar.vue";
 import SettingsMenu from "./components/SettingsMenu.vue";
 import { defaultBoardForPlatform } from "./lib/boards";
 import { useChartsStore } from "./stores/charts";
+import { useHealthStore } from "./stores/health";
 
 const route = useRoute();
 const charts = useChartsStore();
+const health = useHealthStore();
 
 const qqBoard = computed(() => defaultBoardForPlatform(charts.boards, "qqmusic"));
 const neteaseBoard = computed(() => defaultBoardForPlatform(charts.boards, "netease"));
@@ -33,11 +35,17 @@ function navClass(active: boolean): string {
   ].join(" ");
 }
 
+let pollTimer = 0;
 onMounted(() => {
   if (!charts.boards.length) {
     void charts.loadBoards();
   }
+  void health.refresh();
+  pollTimer = window.setInterval(() => {
+    void health.refresh();
+  }, 60_000);
 });
+onUnmounted(() => window.clearInterval(pollTimer));
 </script>
 
 <template>
@@ -73,7 +81,7 @@ onMounted(() => {
           <SettingsMenu class="md:order-last" />
         </div>
         <nav
-          class="grid grid-cols-4 gap-1 rounded-full bg-zinc-200/80 p-1 text-zinc-600 md:ml-auto md:flex md:items-center md:bg-transparent md:p-0 dark:bg-zinc-800 md:dark:bg-transparent"
+          class="grid grid-cols-3 gap-1 rounded-full bg-zinc-200/80 p-1 text-zinc-600 md:ml-auto md:flex md:items-center md:bg-transparent md:p-0 dark:bg-zinc-800 md:dark:bg-transparent"
         >
           <RouterLink to="/" :class="navClass(route.name === 'overview')">总览</RouterLink>
           <RouterLink :to="qqTo" :class="navClass(currentChartPlatform === 'qqmusic')">
@@ -82,7 +90,6 @@ onMounted(() => {
           <RouterLink :to="neteaseTo" :class="navClass(currentChartPlatform === 'netease')">
             网易
           </RouterLink>
-          <RouterLink to="/health" :class="navClass(route.name === 'health')">健康</RouterLink>
         </nav>
       </div>
     </header>

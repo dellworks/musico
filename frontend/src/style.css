@@ -1,0 +1,37 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --cover-fade: rgb(244 244 245);
+}
+
+html.dark {
+  color-scheme: dark;
+  --cover-fade: rgb(24 24 27);
+}
+
+html,
+body,
+#app {
+  min-height: 100%;
+  min-height: 100dvh;
+}
+
+button,
+a {
+  touch-action: manipulation;
+}
+
+body {
+  @apply bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.skel {
+  @apply animate-pulse rounded-md bg-zinc-200 dark:bg-zinc-800;
+}
